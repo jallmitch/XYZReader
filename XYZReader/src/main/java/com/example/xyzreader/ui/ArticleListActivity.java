@@ -1,13 +1,17 @@
 package com.example.xyzreader.ui;
 
+import android.app.Activity;
 import android.app.LoaderManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v4.util.Pair;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.RecyclerView;
@@ -16,8 +20,6 @@ import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.text.format.DateUtils;
 import android.util.Log;
-import android.util.TypedValue;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -51,10 +53,16 @@ public class ArticleListActivity extends ActionBarActivity implements
     private SimpleDateFormat outputFormat = new SimpleDateFormat();
     // Most time functions can only handle 1902 - 2037
     private GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2,1,1);
-
+    private SharedPreferences sharedPreferences;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (sharedPreferences == null){
+            sharedPreferences = getPreferences(0);
+        }
+
         setContentView(R.layout.activity_article_list);
 
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -146,8 +154,22 @@ public class ArticleListActivity extends ActionBarActivity implements
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    startActivity(new Intent(Intent.ACTION_VIEW,
-                            ItemsContract.Items.buildItemUri(getItemId(vh.getAdapterPosition()))));
+                    int adapterPosition = vh.getAdapterPosition();
+                    long itemId = getItemId(adapterPosition);
+                    String positionId = String.valueOf(adapterPosition);
+                    Activity activity = (Activity)view.getContext();
+                    String title = sharedPreferences.getString(positionId+"title", "");
+                    String author = sharedPreferences.getString(positionId+"author", "");
+
+                    Pair<View, String> pair1 = Pair.create(findViewById(R.id.article_title), title);
+                    Pair<View, String> pair2 = Pair.create(findViewById(R.id.thumbnail), String.valueOf(itemId));
+                    Pair<View, String> pair3 = Pair.create(findViewById(R.id.article_subtitle), author);
+                    ActivityOptionsCompat options = ActivityOptionsCompat.makeSceneTransitionAnimation(activity, pair1, pair2,pair3);
+
+                    Intent detailIntent = new Intent();
+                    detailIntent.setClass(activity, ArticleDetailActivity.class);
+                    detailIntent.setData(ItemsContract.Items.buildItemUri(itemId));
+                    startActivity(detailIntent, options.toBundle());
                 }
             });
             return vh;
@@ -167,7 +189,13 @@ public class ArticleListActivity extends ActionBarActivity implements
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
             mCursor.moveToPosition(position);
-            holder.titleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
+            String title = mCursor.getString(ArticleLoader.Query.TITLE);
+            String author = mCursor.getString(ArticleLoader.Query.AUTHOR);
+            long imagePos = mCursor.getLong(ArticleLoader.Query._ID);
+            String positionNumber = String.valueOf(position);
+            holder.titleView.setText(title);
+            holder.titleView.setTransitionName(title);
+            holder.titleView.setTag(title);
             Date publishedDate = parsePublishedDate();
             if (!publishedDate.before(START_OF_EPOCH.getTime())) {
 
@@ -176,18 +204,26 @@ public class ArticleListActivity extends ActionBarActivity implements
                                 publishedDate.getTime(),
                                 System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
                                 DateUtils.FORMAT_ABBREV_ALL).toString()
-                                + "<br/>" + " by "
-                                + mCursor.getString(ArticleLoader.Query.AUTHOR)));
+                                + " by "
+                                + author));
+                holder.subtitleView.setTransitionName(author);
             } else {
                 holder.subtitleView.setText(Html.fromHtml(
                         outputFormat.format(publishedDate)
-                        + "<br/>" + " by "
-                        + mCursor.getString(ArticleLoader.Query.AUTHOR)));
+                        + " by "
+                        + author));
+                holder.subtitleView.setTransitionName(author);
             }
             holder.thumbnailView.setImageUrl(
                     mCursor.getString(ArticleLoader.Query.THUMB_URL),
                     ImageLoaderHelper.getInstance(ArticleListActivity.this).getImageLoader());
             holder.thumbnailView.setAspectRatio(mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
+            holder.thumbnailView.setTransitionName(String.valueOf(imagePos));
+
+            SharedPreferences.Editor editPrefs = sharedPreferences.edit();
+            editPrefs.putString(positionNumber+"title", title);
+            editPrefs.putString(positionNumber+"author", author);
+            editPrefs.apply();
         }
 
         @Override
