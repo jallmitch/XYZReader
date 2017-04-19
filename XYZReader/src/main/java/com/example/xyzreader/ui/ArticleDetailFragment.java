@@ -10,12 +10,6 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.GregorianCalendar;
-
 import android.os.Bundle;
 import android.support.v4.app.ShareCompat;
 import android.support.v7.graphics.Palette;
@@ -34,6 +28,14 @@ import com.android.volley.toolbox.ImageLoader;
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.List;
+
 /**
  * A fragment representing a single Article detail screen. This fragment is
  * either contained in a {@link ArticleListActivity} in two-pane mode (on
@@ -44,6 +46,7 @@ public class ArticleDetailFragment extends Fragment implements
     private static final String TAG = "ArticleDetailFragment";
 
     public static final String ARG_ITEM_ID = "item_id";
+    private static final String ARG_STARTING_ARTICLE_IMAGE_POSITION = "arg_starting_album_image_position";
     private static final float PARALLAX_FACTOR = 1.25f;
 
     private Cursor mCursor;
@@ -85,7 +88,6 @@ public class ArticleDetailFragment extends Fragment implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         if (getArguments().containsKey(ARG_ITEM_ID)) {
             mItemId = getArguments().getLong(ARG_ITEM_ID);
         }
@@ -212,7 +214,13 @@ public class ArticleDetailFragment extends Fragment implements
             mRootView.setAlpha(0);
             mRootView.setVisibility(View.VISIBLE);
             mRootView.animate().alpha(1);
-            titleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
+
+            String title = mCursor.getString(ArticleLoader.Query.TITLE);
+            String author = mCursor.getString(ArticleLoader.Query.AUTHOR);
+
+            titleView.setText(title);
+            titleView.setTransitionName(title);
+
             Date publishedDate = parsePublishedDate();
             if (!publishedDate.before(START_OF_EPOCH.getTime())) {
                 bylineView.setText(Html.fromHtml(
@@ -221,18 +229,25 @@ public class ArticleDetailFragment extends Fragment implements
                                 System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
                                 DateUtils.FORMAT_ABBREV_ALL).toString()
                                 + " by <font color='#ffffff'>"
-                                + mCursor.getString(ArticleLoader.Query.AUTHOR)
+                                + author
                                 + "</font>"));
 
             } else {
                 // If date is before 1902, just show the string
                 bylineView.setText(Html.fromHtml(
                         outputFormat.format(publishedDate) + " by <font color='#ffffff'>"
-                        + mCursor.getString(ArticleLoader.Query.AUTHOR)
+                        + author
                                 + "</font>"));
 
             }
-            bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
+            bylineView.setTransitionName(author);
+            List<String> paragraphs = new ArrayList<>(Arrays.asList(mCursor.getString(ArticleLoader.Query.BODY).split("\\r\\n\\r\\n")));
+
+            //HACK: Help speed up data processing to work with transactions.
+            String sampleText = "For starters, let me try to summarize the lessons and intuitions\r\nI've had about ebooks from my release of two novels and most of a\r\nshort story collection online under a Creative Commons license. A\r\nparodist who published a list of alternate titles for the\r\npresentations at this event called this talk, \"eBooks Suck Right\r\nNow,\" [eBooks suck right now] and as funny as that is, I don't\r\nthink it's true.\r\n\r\nNo, if I had to come up with another title for this talk, I'd\r\ncall it: \"Ebooks: You're Soaking in Them.\" [Ebooks: You're\r\nSoaking in Them] That's because I think that the shape of ebooks\r\nto come is almost visible in the way that people interact with\r\ntext today, and that the job of authors who want to become rich\r\nand famous is to come to a better understanding of that shape.\r\n\r\nI haven't come to a perfect understanding. I don't know what the\r\nfuture of the book looks like. But I have ideas, and I'll share\r\nthem with you:\r\n\r\n1.";
+            bodyView.setText(Html.fromHtml(sampleText.replaceAll("(\r\n|\n)", "<br />")));
+            String articleId = String.valueOf(mCursor.getLong(ArticleLoader.Query._ID));
+            mPhotoView.setTransitionName(articleId);
             ImageLoaderHelper.getInstance(getActivity()).getImageLoader()
                     .get(mCursor.getString(ArticleLoader.Query.PHOTO_URL), new ImageLoader.ImageListener() {
                         @Override
