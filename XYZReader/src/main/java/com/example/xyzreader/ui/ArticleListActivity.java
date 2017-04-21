@@ -11,6 +11,7 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v4.app.SharedElementCallback;
 import android.support.v4.util.Pair;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
@@ -22,6 +23,7 @@ import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.TextView;
 
 import com.example.xyzreader.R;
@@ -33,6 +35,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.Map;
 
 /**
  * An activity representing a list of Articles. This activity has different presentations for
@@ -54,7 +58,47 @@ public class ArticleListActivity extends ActionBarActivity implements
     // Most time functions can only handle 1902 - 2037
     private GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2,1,1);
     private SharedPreferences sharedPreferences;
-    
+
+    static final String EXTRA_STARTING_ARTICLE_POSITION = "extra_starting_item_position";
+    static final String EXTRA_CURRENT_ARTICLE_POSITION = "extra_current_item_position";
+    private Bundle tempState;
+    private boolean isDetailsActivityStarted;
+
+
+    private final SharedElementCallback sharedCallback = new SharedElementCallback() {
+        @Override
+        public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
+
+
+            if (tempState != null){
+                int startPos = tempState.getInt(EXTRA_STARTING_ARTICLE_POSITION);
+                int currentPos = tempState.getInt(EXTRA_CURRENT_ARTICLE_POSITION);
+                if (startPos != currentPos){
+                    String newTransitionName = String.valueOf(sharedPreferences.getLong(String.valueOf(currentPos),0));
+                    View newSharedElement = mRecyclerView.findViewWithTag(newTransitionName);
+                    if (newSharedElement != null){
+                        names.clear();
+                        names.add(newTransitionName);
+                        sharedElements.clear();
+                        sharedElements.put(newTransitionName, newSharedElement);
+                    }
+                }
+                tempState = null;
+            } else {
+                View navBar = findViewById(android.R.id.navigationBarBackground);
+                View statBar = findViewById(android.R.id.statusBarBackground);
+                if (navBar != null){
+                    names.add(navBar.getTransitionName());
+                    sharedElements.put(navBar.getTransitionName(), navBar);
+                }
+                if (statBar != null){
+                    names.add(statBar.getTransitionName());
+                    sharedElements.put(statBar.getTransitionName(), statBar);
+                }
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,6 +108,7 @@ public class ArticleListActivity extends ActionBarActivity implements
         }
 
         setContentView(R.layout.activity_article_list);
+        setEnterSharedElementCallback(sharedCallback);
 
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
 
@@ -73,11 +118,40 @@ public class ArticleListActivity extends ActionBarActivity implements
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
 
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+
         getLoaderManager().initLoader(0, null, this);
 
         if (savedInstanceState == null) {
             refresh();
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        isDetailsActivityStarted = false;
+    }
+
+    @Override
+    public void onActivityReenter(int resultCode, Intent data) {
+        super.onActivityReenter(resultCode, data);
+        tempState = new Bundle(data.getExtras());
+
+        int startPos = tempState.getInt(EXTRA_STARTING_ARTICLE_POSITION);
+        int currentPos = tempState.getInt(EXTRA_CURRENT_ARTICLE_POSITION);
+        if (startPos != currentPos){
+            mRecyclerView.scrollToPosition(currentPos);
+        }
+        postponeEnterTransition();
+        mRecyclerView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                mRecyclerView.getViewTreeObserver().removeOnPreDrawListener(this);
+                mRecyclerView.requestLayout();
+                startPostponedEnterTransition();
+                return true;
+            }
+        });
     }
 
     private void refresh() {
@@ -136,6 +210,7 @@ public class ArticleListActivity extends ActionBarActivity implements
 
     private class Adapter extends RecyclerView.Adapter<ViewHolder> {
         private Cursor mCursor;
+        private long articlePos;
 
         public Adapter(Cursor cursor) {
             mCursor = cursor;
@@ -158,18 +233,28 @@ public class ArticleListActivity extends ActionBarActivity implements
                     long itemId = getItemId(adapterPosition);
                     String positionId = String.valueOf(adapterPosition);
                     Activity activity = (Activity)view.getContext();
-                    String title = sharedPreferences.getString(positionId+"title", "");
-                    String author = sharedPreferences.getString(positionId+"author", "");
+//                    String title = sharedPreferences.getString(positionId+"title", "");
+//                    String author = sharedPreferences.getString(positionId+"author", "");
+//
+                    SharedPreferences.Editor editPrefs = sharedPreferences.edit();
+                    editPrefs.putLong(positionId, itemId);
+//                    editPrefs.putInt("currentPosition", adapterPosition);
+                    editPrefs.apply();
 
-                    Pair<View, String> pair1 = Pair.create(findViewById(R.id.article_title), title);
+//                    Pair<View, String> pair1 = Pair.create(findViewById(R.id.article_title), title);
                     Pair<View, String> pair2 = Pair.create(findViewById(R.id.thumbnail), String.valueOf(itemId));
-                    Pair<View, String> pair3 = Pair.create(findViewById(R.id.article_subtitle), author);
-                    ActivityOptionsCompat options = ActivityOptionsCompat.makeSceneTransitionAnimation(activity, pair1, pair2,pair3);
+//                    Pair<View, String> pair3 = Pair.create(findViewById(R.id.article_subtitle), author);
+                    ActivityOptionsCompat options = ActivityOptionsCompat.makeSceneTransitionAnimation(activity, pair2);
 
                     Intent detailIntent = new Intent();
                     detailIntent.setClass(activity, ArticleDetailActivity.class);
+                    detailIntent.putExtra(EXTRA_STARTING_ARTICLE_POSITION, adapterPosition);
                     detailIntent.setData(ItemsContract.Items.buildItemUri(itemId));
-                    startActivity(detailIntent, options.toBundle());
+
+                    if (!isDetailsActivityStarted) {
+                        isDetailsActivityStarted = true;
+                        startActivity(detailIntent, options.toBundle());
+                    }
                 }
             });
             return vh;
@@ -191,11 +276,11 @@ public class ArticleListActivity extends ActionBarActivity implements
             mCursor.moveToPosition(position);
             String title = mCursor.getString(ArticleLoader.Query.TITLE);
             String author = mCursor.getString(ArticleLoader.Query.AUTHOR);
-            long imagePos = mCursor.getLong(ArticleLoader.Query._ID);
-            String positionNumber = String.valueOf(position);
+            articlePos = mCursor.getLong(ArticleLoader.Query._ID);
+//            String positionNumber = String.valueOf(position);
             holder.titleView.setText(title);
-            holder.titleView.setTransitionName(title);
-            holder.titleView.setTag(title);
+//            holder.titleView.setTransitionName(title);
+//            holder.titleView.setTag(title);
             Date publishedDate = parsePublishedDate();
             if (!publishedDate.before(START_OF_EPOCH.getTime())) {
 
@@ -206,24 +291,26 @@ public class ArticleListActivity extends ActionBarActivity implements
                                 DateUtils.FORMAT_ABBREV_ALL).toString()
                                 + " by "
                                 + author));
-                holder.subtitleView.setTransitionName(author);
+//                holder.subtitleView.setTransitionName(author);
             } else {
                 holder.subtitleView.setText(Html.fromHtml(
                         outputFormat.format(publishedDate)
                         + " by "
                         + author));
-                holder.subtitleView.setTransitionName(author);
+//                holder.subtitleView.setTransitionName(author);
             }
             holder.thumbnailView.setImageUrl(
                     mCursor.getString(ArticleLoader.Query.THUMB_URL),
                     ImageLoaderHelper.getInstance(ArticleListActivity.this).getImageLoader());
             holder.thumbnailView.setAspectRatio(mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
-            holder.thumbnailView.setTransitionName(String.valueOf(imagePos));
+            String articePosition = String.valueOf(articlePos);
+            holder.thumbnailView.setTransitionName(articePosition);
+            holder.thumbnailView.setTag(String.valueOf(articePosition));
 
-            SharedPreferences.Editor editPrefs = sharedPreferences.edit();
-            editPrefs.putString(positionNumber+"title", title);
-            editPrefs.putString(positionNumber+"author", author);
-            editPrefs.apply();
+//            SharedPreferences.Editor editPrefs = sharedPreferences.edit();
+//            editPrefs.putString(positionNumber+"title", title);
+//            editPrefs.putString(positionNumber+"author", author);
+//            editPrefs.apply();
         }
 
         @Override
