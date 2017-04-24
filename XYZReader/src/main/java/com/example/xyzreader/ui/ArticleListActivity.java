@@ -68,13 +68,14 @@ public class ArticleListActivity extends ActionBarActivity implements
     private final SharedElementCallback sharedCallback = new SharedElementCallback() {
         @Override
         public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
-
-
             if (tempState != null){
                 int startPos = tempState.getInt(EXTRA_STARTING_ARTICLE_POSITION);
                 int currentPos = tempState.getInt(EXTRA_CURRENT_ARTICLE_POSITION);
+                String sharedPrefNum = String.valueOf(sharedPreferences.getLong(String.valueOf(startPos),3));
+                Log.d("AritcleActivity", "currentPos num:" + currentPos);
+                Log.d("AritcleActivity", "sharedPref Long:" + sharedPrefNum);
                 if (startPos != currentPos){
-                    String newTransitionName = String.valueOf(sharedPreferences.getLong(String.valueOf(currentPos),0));
+                    String newTransitionName = sharedPrefNum;
                     View newSharedElement = mRecyclerView.findViewWithTag(newTransitionName);
                     if (newSharedElement != null){
                         names.clear();
@@ -85,6 +86,7 @@ public class ArticleListActivity extends ActionBarActivity implements
                 }
                 tempState = null;
             } else {
+                Log.d("AritcleActivity", "tempState is empty, defaulting to navigation and statbar backgrounds.");
                 View navBar = findViewById(android.R.id.navigationBarBackground);
                 View statBar = findViewById(android.R.id.statusBarBackground);
                 if (navBar != null){
@@ -102,13 +104,11 @@ public class ArticleListActivity extends ActionBarActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        setContentView(R.layout.activity_article_list);
         if (sharedPreferences == null){
             sharedPreferences = getPreferences(0);
         }
-
-        setContentView(R.layout.activity_article_list);
-        setEnterSharedElementCallback(sharedCallback);
+        setExitSharedElementCallback(sharedCallback);
 
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
 
@@ -305,7 +305,7 @@ public class ArticleListActivity extends ActionBarActivity implements
             holder.thumbnailView.setAspectRatio(mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
             String articePosition = String.valueOf(articlePos);
             holder.thumbnailView.setTransitionName(articePosition);
-            holder.thumbnailView.setTag(String.valueOf(articePosition));
+            holder.thumbnailView.setTag(articePosition);
 
 //            SharedPreferences.Editor editPrefs = sharedPreferences.edit();
 //            editPrefs.putString(positionNumber+"title", title);
