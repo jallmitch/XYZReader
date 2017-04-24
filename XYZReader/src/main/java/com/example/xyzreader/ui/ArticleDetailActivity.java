@@ -15,6 +15,7 @@ import android.support.v13.app.FragmentStatePagerAdapter;
 import android.support.v4.app.SharedElementCallback;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
@@ -60,6 +61,8 @@ public class ArticleDetailActivity extends ActionBarActivity
         @Override
         public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
             if (isReturning) {
+                Log.d("ArticleDetail", "startPos:" + startPos);
+                Log.d("ArticleDetail", "currentPos:" + currentPos);
                 ImageView sharedElement = articleFrag.getArticleImage(); //TODO: add method to Fragment to get the ImageView;
                 if (sharedElement == null){
                     names.clear();
@@ -140,6 +143,7 @@ public class ArticleDetailActivity extends ActionBarActivity
         mUpButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                articleFrag.startPostponedEnterTransition();
                 supportFinishAfterTransition();
                 onSupportNavigateUp();
             }
