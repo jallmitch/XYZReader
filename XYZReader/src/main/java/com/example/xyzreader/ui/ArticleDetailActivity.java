@@ -15,7 +15,6 @@ import android.support.v13.app.FragmentStatePagerAdapter;
 import android.support.v4.app.SharedElementCallback;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
@@ -61,9 +60,7 @@ public class ArticleDetailActivity extends ActionBarActivity
         @Override
         public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
             if (isReturning) {
-                Log.d("ArticleDetail", "startPos:" + startPos);
-                Log.d("ArticleDetail", "currentPos:" + currentPos);
-                ImageView sharedElement = articleFrag.getArticleImage(); //TODO: add method to Fragment to get the ImageView;
+                ImageView sharedElement = articleFrag.getArticleImage();
                 if (sharedElement == null){
                     names.clear();
                     sharedElements.clear();
@@ -87,7 +84,7 @@ public class ArticleDetailActivity extends ActionBarActivity
                             View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         }
         setContentView(R.layout.activity_article_detail);
-        postponeEnterTransition();
+//        postponeEnterTransition();
         setEnterSharedElementCallback(sharedCallback);
         Bundle extras = getIntent().getExtras();
         startPos = getIntent().getIntExtra(EXTRA_STARTING_ARTICLE_POSITION, 0);
@@ -95,7 +92,6 @@ public class ArticleDetailActivity extends ActionBarActivity
         if (savedInstanceState == null) {
             if (getIntent() != null && getIntent().getData() != null) {
                 mStartId = ItemsContract.Items.getItemId(getIntent().getData());
-                mSelectedItemId = mStartId;
                 currentPos = startPos;
             }
         }else {
@@ -130,9 +126,9 @@ public class ArticleDetailActivity extends ActionBarActivity
                     mCursor.moveToPosition(position);
                 }
                 mSelectedItemId = mCursor.getLong(ArticleLoader.Query._ID);
-                SharedPreferences.Editor editPrefs = sharedPreferences.edit();
-                editPrefs.putLong(String.valueOf(currentPos), mSelectedItemId);
-                editPrefs.apply();
+//                SharedPreferences.Editor editPrefs = sharedPreferences.edit();
+//                editPrefs.putLong(String.valueOf(currentPos), mSelectedItemId);
+//                editPrefs.apply();
                 updateUpButtonPosition();
             }
         });

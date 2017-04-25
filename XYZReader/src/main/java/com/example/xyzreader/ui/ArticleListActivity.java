@@ -71,23 +71,19 @@ public class ArticleListActivity extends ActionBarActivity implements
             if (tempState != null){
                 int startPos = tempState.getInt(EXTRA_STARTING_ARTICLE_POSITION);
                 int currentPos = tempState.getInt(EXTRA_CURRENT_ARTICLE_POSITION);
-                String sharedPrefNum = String.valueOf(sharedPreferences.getLong(String.valueOf(startPos),3));
-                Log.d("AritcleActivity", "currentPos num:" + currentPos);
-                Log.d("AritcleActivity", "sharedPref Long:" + sharedPrefNum);
+
                 if (startPos != currentPos){
-                    String newTransitionName = sharedPrefNum;
-                    View newSharedElement = mRecyclerView.findViewWithTag(newTransitionName);
+                    String transitionName = String.valueOf(sharedPreferences.getLong(String.valueOf(currentPos),0));
+                    View newSharedElement = mRecyclerView.findViewWithTag(transitionName);
                     if (newSharedElement != null){
                         names.clear();
-                        names.add(newTransitionName);
+                        names.add(transitionName);
                         sharedElements.clear();
-                        sharedElements.put(newTransitionName, newSharedElement);
+                        sharedElements.put(transitionName, newSharedElement);
                     }
                 }
                 tempState = null;
             } else {
-                Log.d("AritcleActivity", "tempState is empty, defaulting to navigation and statbar backgrounds.");
-
                 View navBar = findViewById(android.R.id.navigationBarBackground);
                 View statBar = findViewById(android.R.id.statusBarBackground);
                 if (navBar != null){
@@ -117,7 +113,6 @@ public class ArticleListActivity extends ActionBarActivity implements
         setExitSharedElementCallback(sharedCallback);
 
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
-
 
         final View toolbarContainerView = findViewById(R.id.toolbar_container);
 
@@ -216,7 +211,7 @@ public class ArticleListActivity extends ActionBarActivity implements
 
     private class Adapter extends RecyclerView.Adapter<ViewHolder> {
         private Cursor mCursor;
-        private long articlePos;
+        private int articlePos;
 
         public Adapter(Cursor cursor) {
             mCursor = cursor;
@@ -235,26 +230,15 @@ public class ArticleListActivity extends ActionBarActivity implements
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    int adapterPosition = vh.getAdapterPosition();
-                    long itemId = getItemId(adapterPosition);
-                    String positionId = String.valueOf(adapterPosition);
-                    Activity activity = (Activity)view.getContext();
-//                    String title = sharedPreferences.getString(positionId+"title", "");
-//                    String author = sharedPreferences.getString(positionId+"author", "");
-//
-                    SharedPreferences.Editor editPrefs = sharedPreferences.edit();
-                    editPrefs.putLong(positionId, itemId);
-//                    editPrefs.putInt("currentPosition", adapterPosition);
-                    editPrefs.apply();
-
-//                    Pair<View, String> pair1 = Pair.create(findViewById(R.id.article_title), title);
+                    long itemId = getItemId( vh.getAdapterPosition());
                     Pair<View, String> pair2 = Pair.create(findViewById(R.id.thumbnail), String.valueOf(itemId));
-//                    Pair<View, String> pair3 = Pair.create(findViewById(R.id.article_subtitle), author);
+
+                    Activity activity = (Activity)view.getContext();
                     ActivityOptionsCompat options = ActivityOptionsCompat.makeSceneTransitionAnimation(activity, pair2);
 
                     Intent detailIntent = new Intent();
                     detailIntent.setClass(activity, ArticleDetailActivity.class);
-                    detailIntent.putExtra(EXTRA_STARTING_ARTICLE_POSITION, adapterPosition);
+                    detailIntent.putExtra(EXTRA_STARTING_ARTICLE_POSITION, articlePos);
                     detailIntent.setData(ItemsContract.Items.buildItemUri(itemId));
 
                     if (!isDetailsActivityStarted) {
@@ -282,11 +266,8 @@ public class ArticleListActivity extends ActionBarActivity implements
             mCursor.moveToPosition(position);
             String title = mCursor.getString(ArticleLoader.Query.TITLE);
             String author = mCursor.getString(ArticleLoader.Query.AUTHOR);
-            articlePos = mCursor.getLong(ArticleLoader.Query._ID);
-//            String positionNumber = String.valueOf(position);
+            long articleId = mCursor.getLong(ArticleLoader.Query._ID);
             holder.titleView.setText(title);
-//            holder.titleView.setTransitionName(title);
-//            holder.titleView.setTag(title);
             Date publishedDate = parsePublishedDate();
             if (!publishedDate.before(START_OF_EPOCH.getTime())) {
 
@@ -297,26 +278,25 @@ public class ArticleListActivity extends ActionBarActivity implements
                                 DateUtils.FORMAT_ABBREV_ALL).toString()
                                 + " by "
                                 + author));
-//                holder.subtitleView.setTransitionName(author);
             } else {
                 holder.subtitleView.setText(Html.fromHtml(
                         outputFormat.format(publishedDate)
                         + " by "
                         + author));
-//                holder.subtitleView.setTransitionName(author);
             }
             holder.thumbnailView.setImageUrl(
                     mCursor.getString(ArticleLoader.Query.THUMB_URL),
                     ImageLoaderHelper.getInstance(ArticleListActivity.this).getImageLoader());
             holder.thumbnailView.setAspectRatio(mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
-            String articePosition = String.valueOf(articlePos);
-            holder.thumbnailView.setTransitionName(articePosition);
-            holder.thumbnailView.setTag(articePosition);
 
-//            SharedPreferences.Editor editPrefs = sharedPreferences.edit();
-//            editPrefs.putString(positionNumber+"title", title);
-//            editPrefs.putString(positionNumber+"author", author);
-//            editPrefs.apply();
+            String articleIdentity = String.valueOf(articleId);
+            holder.thumbnailView.setTransitionName(articleIdentity);
+            holder.thumbnailView.setTag(articleIdentity);
+            articlePos = position;
+
+            SharedPreferences.Editor editPrefs = sharedPreferences.edit();
+            editPrefs.putLong(String.valueOf(position), articleId);
+            editPrefs.apply();
         }
 
         @Override
