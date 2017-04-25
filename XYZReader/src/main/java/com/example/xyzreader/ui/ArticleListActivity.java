@@ -12,7 +12,6 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.SharedElementCallback;
-import android.support.v4.util.Pair;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.RecyclerView;
@@ -226,11 +225,7 @@ public class ArticleListActivity extends ActionBarActivity implements
                 @Override
                 public void onClick(View view) {
                     long itemId = getItemId( vh.getAdapterPosition());
-                    Pair<View, String> pair2 = Pair.create(findViewById(R.id.thumbnail), String.valueOf(itemId));
-
                     Activity activity = (Activity)view.getContext();
-                    ActivityOptionsCompat options = ActivityOptionsCompat.makeSceneTransitionAnimation(activity, pair2);
-
                     Intent detailIntent = new Intent();
                     detailIntent.setClass(activity, ArticleDetailActivity.class);
                     detailIntent.putExtra(EXTRA_STARTING_ARTICLE_POSITION, articlePos);
@@ -238,7 +233,7 @@ public class ArticleListActivity extends ActionBarActivity implements
 
                     if (!isDetailsActivityStarted) {
                         isDetailsActivityStarted = true;
-                        startActivity(detailIntent, options.toBundle());
+                        startActivity(detailIntent, ActivityOptionsCompat.makeSceneTransitionAnimation(activity, vh.thumbnailView, String.valueOf(itemId)).toBundle());
                     }
                 }
             });
