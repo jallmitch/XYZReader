@@ -86,11 +86,11 @@ public class ArticleDetailFragment extends Fragment implements
     public ArticleDetailFragment() {
     }
 
-    public static ArticleDetailFragment newInstance(long itemId, int startingPostion, int positionId) {
+    public static ArticleDetailFragment newInstance(long itemId, int startingPosition, int positionId) {
         Bundle arguments = new Bundle();
         arguments.putLong(ARG_ITEM_ID, itemId);
         arguments.putInt(ARG_ITEM_POSITION, positionId);
-        arguments.putInt(ARG_STARTING_ARTICLE_IMAGE_POSITION,startingPostion);
+        arguments.putInt(ARG_STARTING_ARTICLE_IMAGE_POSITION,startingPosition);
         ArticleDetailFragment fragment = new ArticleDetailFragment();
         fragment.setArguments(arguments);
         return fragment;
