@@ -147,10 +147,7 @@ public class ArticleDetailFragment extends Fragment implements
         });
 
         mPhotoView = (ImageView) mRootView.findViewById(R.id.photo);
-//        String itemLong = String.valueOf(itemPos);
-//        mPhotoView.setTransitionName(itemLong);
         mPhotoContainerView = mRootView.findViewById(R.id.photo_container);
-
         mStatusBarColorDrawable = new ColorDrawable(0);
 
         mRootView.findViewById(R.id.share_fab).setOnClickListener(new View.OnClickListener() {
@@ -252,21 +249,20 @@ public class ArticleDetailFragment extends Fragment implements
                                 DateUtils.FORMAT_ABBREV_ALL).toString()
                                 + " by <font color='#ffffff'>"
                                 + author
-                                + "</font>"));
+                                + "</font>",0));
 
             } else {
                 // If date is before 1902, just show the string
                 bylineView.setText(Html.fromHtml(
                         outputFormat.format(publishedDate) + " by <font color='#ffffff'>"
                         + author
-                                + "</font>"));
+                                + "</font>",0));
 
             }
 
             //HACK: Help speed up data processing to work with transactions.
             String sampleText = "For starters, let me try to summarize the lessons and intuitions\r\nI've had about ebooks from my release of two novels and most of a\r\nshort story collection online under a Creative Commons license. A\r\nparodist who published a list of alternate titles for the\r\npresentations at this event called this talk, \"eBooks Suck Right\r\nNow,\" [eBooks suck right now] and as funny as that is, I don't\r\nthink it's true.\r\n\r\nNo, if I had to come up with another title for this talk, I'd\r\ncall it: \"Ebooks: You're Soaking in Them.\" [Ebooks: You're\r\nSoaking in Them] That's because I think that the shape of ebooks\r\nto come is almost visible in the way that people interact with\r\ntext today, and that the job of authors who want to become rich\r\nand famous is to come to a better understanding of that shape.\r\n\r\nI haven't come to a perfect understanding. I don't know what the\r\nfuture of the book looks like. But I have ideas, and I'll share\r\nthem with you:\r\n\r\n1.";
-//            bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
-            bodyView.setText(Html.fromHtml(sampleText.replaceAll("(\r\n|\n)", "<br />")));
+            bodyView.setText(Html.fromHtml(sampleText.replaceAll("(\r\n|\n)", "<br />"),0));
 
             String articleId = String.valueOf(mCursor.getLong(ArticleLoader.Query._ID));
             mPhotoView.setTransitionName(articleId);
@@ -276,7 +272,7 @@ public class ArticleDetailFragment extends Fragment implements
                         public void onResponse(ImageLoader.ImageContainer imageContainer, boolean b) {
                             Bitmap bitmap = imageContainer.getBitmap();
                             if (bitmap != null) {
-                                Palette p = Palette.generate(bitmap, 12);
+                                Palette p = new Palette.Builder(bitmap).generate();
                                 mMutedColor = p.getDarkMutedColor(0xFF333333);
                                 mPhotoView.setImageBitmap(imageContainer.getBitmap());
                                 mRootView.findViewById(R.id.meta_bar)
@@ -294,7 +290,7 @@ public class ArticleDetailFragment extends Fragment implements
             mRootView.setVisibility(View.GONE);
             titleView.setText("N/A");
             bylineView.setText("N/A" );
-//            bodyView.setText("N/A");
+            bodyView.setText("N/A");
         }
     }
 
@@ -338,8 +334,6 @@ public class ArticleDetailFragment extends Fragment implements
                 ? (int) mPhotoContainerView.getTranslationY() + mPhotoView.getHeight() - mScrollY
                 : mPhotoView.getHeight() - mScrollY;
     }
-
-
 
     /**
      * Returns the shared element that should be transitioned back to the previous Activity,

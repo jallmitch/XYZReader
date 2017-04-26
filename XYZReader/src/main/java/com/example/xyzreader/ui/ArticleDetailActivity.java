@@ -14,7 +14,7 @@ import android.support.v13.app.ActivityCompat;
 import android.support.v13.app.FragmentStatePagerAdapter;
 import android.support.v4.app.SharedElementCallback;
 import android.support.v4.view.ViewPager;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,7 +34,7 @@ import static com.example.xyzreader.ui.ArticleListActivity.EXTRA_STARTING_ARTICL
 /**
  * An activity representing a single Article detail screen, letting you swipe between articles.
  */
-public class ArticleDetailActivity extends ActionBarActivity
+public class ArticleDetailActivity extends AppCompatActivity
         implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private Cursor mCursor;
@@ -84,9 +84,7 @@ public class ArticleDetailActivity extends ActionBarActivity
                             View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         }
         setContentView(R.layout.activity_article_detail);
-//        postponeEnterTransition();
         setEnterSharedElementCallback(sharedCallback);
-        Bundle extras = getIntent().getExtras();
         startPos = getIntent().getIntExtra(EXTRA_STARTING_ARTICLE_POSITION, 0);
 
         if (savedInstanceState == null) {
@@ -110,7 +108,7 @@ public class ArticleDetailActivity extends ActionBarActivity
                 .applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1, getResources().getDisplayMetrics()));
         mPager.setPageMarginDrawable(new ColorDrawable(0x22000000));
 
-        mPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+        mPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageScrollStateChanged(int state) {
                 super.onPageScrollStateChanged(state);
@@ -126,9 +124,6 @@ public class ArticleDetailActivity extends ActionBarActivity
                     mCursor.moveToPosition(position);
                 }
                 mSelectedItemId = mCursor.getLong(ArticleLoader.Query._ID);
-//                SharedPreferences.Editor editPrefs = sharedPreferences.edit();
-//                editPrefs.putLong(String.valueOf(currentPos), mSelectedItemId);
-//                editPrefs.apply();
                 updateUpButtonPosition();
             }
         });
