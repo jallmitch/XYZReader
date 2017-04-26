@@ -2,13 +2,13 @@ package com.example.xyzreader.ui;
 
 import android.app.Fragment;
 import android.app.LoaderManager;
-import android.content.Context;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -23,9 +23,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import com.android.volley.VolleyError;
@@ -35,8 +33,6 @@ import com.example.xyzreader.data.ArticleLoader;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
@@ -233,11 +229,9 @@ public class ArticleDetailFragment extends Fragment implements
         TextView titleView = (TextView) mRootView.findViewById(R.id.article_title);
         TextView bylineView = (TextView) mRootView.findViewById(R.id.article_byline);
         bylineView.setMovementMethod(new LinkMovementMethod());
-//        TextView bodyView = (TextView) mRootView.findViewById(R.id.article_body);
-        ListView mParagraphListView = (ListView) mRootView.findViewById(R.id.article_paragraph_list);
+        TextView bodyView = (TextView) mRootView.findViewById(R.id.article_body);
 
-
-//        bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
+        bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
 
         if (mCursor != null) {
             mRootView.setAlpha(0);
@@ -248,7 +242,6 @@ public class ArticleDetailFragment extends Fragment implements
             String author = mCursor.getString(ArticleLoader.Query.AUTHOR);
 
             titleView.setText(title);
-//            titleView.setTransitionName(title);
 
             Date publishedDate = parsePublishedDate();
             if (!publishedDate.before(START_OF_EPOCH.getTime())) {
@@ -269,18 +262,11 @@ public class ArticleDetailFragment extends Fragment implements
                                 + "</font>"));
 
             }
-//            bylineView.setTransitionName(author);
-
-            ArrayList<String> paragraphs = new ArrayList<>(Arrays.asList(mCursor.getString(ArticleLoader.Query.BODY).split("\\r\\n\\r\\n")));
-//            String[] paragraphs = mCursor.getString(ArticleLoader.Query.BODY).split("\\r\\n\\r\\n");
-
-            ArticleAdapter articleAdapter = new ArticleAdapter(getActivity(), paragraphs);
-//            ArrayAdapter<String> listAdapter = new ArrayAdapter(getActivity(), R.layout.article_paragraph_view, paragraphs);
-            mParagraphListView.setAdapter(articleAdapter);
 
             //HACK: Help speed up data processing to work with transactions.
-//            String sampleText = "For starters, let me try to summarize the lessons and intuitions\r\nI've had about ebooks from my release of two novels and most of a\r\nshort story collection online under a Creative Commons license. A\r\nparodist who published a list of alternate titles for the\r\npresentations at this event called this talk, \"eBooks Suck Right\r\nNow,\" [eBooks suck right now] and as funny as that is, I don't\r\nthink it's true.\r\n\r\nNo, if I had to come up with another title for this talk, I'd\r\ncall it: \"Ebooks: You're Soaking in Them.\" [Ebooks: You're\r\nSoaking in Them] That's because I think that the shape of ebooks\r\nto come is almost visible in the way that people interact with\r\ntext today, and that the job of authors who want to become rich\r\nand famous is to come to a better understanding of that shape.\r\n\r\nI haven't come to a perfect understanding. I don't know what the\r\nfuture of the book looks like. But I have ideas, and I'll share\r\nthem with you:\r\n\r\n1.";
-//            bodyView.setText(Html.fromHtml(sampleText.replaceAll("(\r\n|\n)", "<br />")));
+            String sampleText = "For starters, let me try to summarize the lessons and intuitions\r\nI've had about ebooks from my release of two novels and most of a\r\nshort story collection online under a Creative Commons license. A\r\nparodist who published a list of alternate titles for the\r\npresentations at this event called this talk, \"eBooks Suck Right\r\nNow,\" [eBooks suck right now] and as funny as that is, I don't\r\nthink it's true.\r\n\r\nNo, if I had to come up with another title for this talk, I'd\r\ncall it: \"Ebooks: You're Soaking in Them.\" [Ebooks: You're\r\nSoaking in Them] That's because I think that the shape of ebooks\r\nto come is almost visible in the way that people interact with\r\ntext today, and that the job of authors who want to become rich\r\nand famous is to come to a better understanding of that shape.\r\n\r\nI haven't come to a perfect understanding. I don't know what the\r\nfuture of the book looks like. But I have ideas, and I'll share\r\nthem with you:\r\n\r\n1.";
+//            bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
+            bodyView.setText(Html.fromHtml(sampleText.replaceAll("(\r\n|\n)", "<br />")));
 
             String articleId = String.valueOf(mCursor.getLong(ArticleLoader.Query._ID));
             mPhotoView.setTransitionName(articleId);
@@ -374,36 +360,5 @@ public class ArticleDetailFragment extends Fragment implements
         Rect containerBounds = new Rect();
         container.getHitRect(containerBounds);
         return view.getLocalVisibleRect(containerBounds);
-    }
-
-    private class ArticleAdapter extends ArrayAdapter<String>
-    {
-        private ArrayList<String> articleParagraphs;
-
-        public ArticleAdapter(Context context,ArrayList<String> paragraphs)
-        {
-            super(context,0,paragraphs);
-            this.articleParagraphs = new ArrayList<>(paragraphs);
-        }
-
-        @Override
-        public int getCount() {
-            return articleParagraphs.size();
-        }
-
-        @NonNull
-        @Override
-        public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-
-
-            if (convertView == null){
-                convertView = LayoutInflater.from(getContext()).inflate(R.layout.article_paragraph_view, parent, false);
-            }
-            String item = getItem(position);
-
-            TextView paragraphView = (TextView) convertView.findViewById(R.id.article_body);
-            paragraphView.setText(Html.fromHtml(item.replaceAll("(\r\n|\n)", "<br />")));
-            return convertView;
-        }
     }
 }
